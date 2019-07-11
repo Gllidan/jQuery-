@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery实例</title>
+</head>
+<body>
+<script>
+    /* 无new创建实例方式 */
+    /* 需求场景: 全局作用域下可直接通过$()函数式方式创建实例 */
+    /* 思路: 1. 解决工厂函数创建实例问题. 2. 解决原构造函数的原形扩展获取问题 */
+    (function (root) {
+        function jQuery() {
+            // 错误陷入死循环
+            // return new jQuery();
+            return new jQuery.prototype.init();
+        }
+        // 创建init当作构造函数
+        jQuery.prototype = {
+            init: function () {
+
+            }
+        }
+        /* 关键: 原形共享思想( 解决init当作构造函数时,无法获取jQuery原形上扩展的属性 ) */
+        jQuery.prototype.init.prototype = jQuery.prototype;
+
+        root.$ = root.jQuery = jQuery
+        console.log($());
+    })(this)
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery的callback实现</title>
+
+</head>
+<body>
+<script src="jquery.js"></script>
+<script>
+    //1. 生成callback对象 once/只执行一次 unique/只插入一次 stopOnfalse/false停止 memory/fire一次后再add直接运行
+    //2. 通过add添加队列
+    //3. 通过fire执行队列
+    (function (root) {
+        function jQuery() {
+            return new jQuery.prototype.init();
+        }
+        jQuery.fn = jQuery.prototype = {
+            init: function () {
+
+            }
+        }
+        jQuery.prototype.init.prototype = jQuery.prototype;
+        jQuery.extend = jQuery.fn.extend = function () {
+            // 判断是否有传, 没有初始化
+            var target = arguments[0] || {};
+            // 默认浅拷贝
+            var deep = false;
+            var length = arguments.length;
+            var i = 1;
+            var option, name, copy, copyisArr, attr, clone;
+            if (typeof target === 'boolean') {
+                deep = target;
+                target = arguments[1];
+                i = 2;
+            }
+            if (typeof target !== 'object') {
+                target = {};
+            }
+            // 这个deep模式也会走这部分逻辑,从而实现jQuery/原形深拷贝
+            if (length === i) {
+                target = this;
+                i--;
+            }
+            for (; i<length; i++) {
+                if ((option = arguments[i])) {
+                    for (name in option) {
+                        copy = option[name];
+                        attr = target[name];
+                        // 深拷贝且为数组/对象
+                        if (deep && (jQuery.islikeObj(copy) || (copyisArr = jQuery.islikeArr(copy)))) {
+                            if (copyisArr) {
+                                copyisArr = false;
+                                clone = attr && jQuery.islikeArr(copy) ? attr : [];
+                            } else {
+                                clone = attr && jQuery.islikeObj(copy) ? attr : {};
+                            }
+                            // 递归深拷贝
+                            target[name] = jQuery.extend(deep, clone, copy);
+                        } else if (copy){
+                            target[name] = copy;
+                        }
+                    }
+                }
+            }
+            return target;
+        };
+        jQuery.extend({
+            callback: function (options) {
+                var fnlist = []; // 队列
+                var optionObj = {}; // 配置
+                var i = 0;
+                var hasFire, // 判断是否执行
+                    memory, // 记录fire传参,方便后续add的函数调用
+                    start, // 记录函数执行位置
+                    starts; // memory状态才使用的记录
+                var optionArr = typeof options === 'string' && options.split(' ');
+                // 创建属性
+                for (; i<optionArr.length; i++) {
+                    optionObj[optionArr[i]] = true;
+                }
+                var fireFn = function (data) {
+                    var i = starts || 0; //这里直接用start的话,会导致add初始化的时候直接使用list的length,从而产生只会从1号位置开始执行函数的错误
+                    starts = 0; // 这里重置是为了确保再次fire的时候能按顺序执行队列
+                    var length = fnlist.length;
+                    memory = optionObj.memory && data;
+                    hasFire = true;
+                    for (; i<length; i++) {
+                        if (fnlist[i].apply(data[0], data[1]) === false && optionObj.stopOnfalse) {
+                            break;
+                        }
+                    }
+                };
+                var self = {
+                    // 添加执行队列
+                    add: function () {
+                        var arg = [].slice.call(arguments);
+                        var i = 0;
+                        var length = arg.length;
+                        start = fnlist.length; //记录当前队列长度
+                        for (; i<length; i++) {
+                            typeof arg[i] === 'function' && fnlist.push(arg[i]);
+                        }
+                        if (memory) {
+                            starts = start;
+                            fireFn(memory);
+                        }
+                    },
+                    // 绑定执行栈
+                    fireWith: function (context, args) {
+                        fireFn([context, args]);
+                    },
+                    // 执行队列
+                    fire: function () {
+                        if (!optionObj.once || !hasFire) {
+                            this.fireWith(this, arguments);
+                        }
+                    }
+                }
+                return self
+            }
+        });
+        root.$ = root.jQuery = jQuery;
+        var cb = $.callback('stopOnfalse memory');
+        cb.add(function (type) {
+            alert(1);
+        });
+        cb.fire('type');
+
+        cb.add(function (type) {
+            alert(3);
+        });
+        cb.add(function () {
+            alert(2);
+        });
+        cb.fire();
+        cb.add(function () {
+            alert(4);
+        });
+//        cb.add(function () {
+//            alert(3);
+//        });
+//        cb.fire();
+//        cb.add(function () {
+//            alert(4);
+//        });
+    })(this)
+</script>
+</body>
+</html>

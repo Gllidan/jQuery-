@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery之extend实现</title>
+</head>
+<body>
+<script>
+    (function (root) {
+        /* 需求场景: 可以对构造函数,构造函数原形,传入对象 进行浅拷贝,深拷贝 */
+        /* $.extend 修改jQuery本身, 添加静态方法/属性 */
+        /* 什么意义,jQuery每次创建的不是init的实例吗?扩展的属性怎么拿到? -- 可直接使用$.方法的方式获取静态属性/方法 */
+        /* $.fn.extend 对jQuery的原形扩展,从而实现实例扩展 */
+        /* 需求场景: 可以对构造函数,构造函数原形,传入对象 进行浅拷贝,深拷贝 */
+        function jQuery() {
+            return new jQuery.fn.init();
+        }
+        // jQuery.fn指向jQuery原形, 方便简写
+        jQuery.fn = jQuery.prototype = {
+            init: function () {
+            }
+        };
+        // 原形共享,将jQuery原形共享
+        jQuery.fn.init.prototype = jQuery.fn;
+        // 静态方法或原形方法都指向同一个函数调用
+        jQuery.extend = jQuery.fn.extend = function () {
+            // 判断是否有传, 没有初始化
+            var target = arguments[0] || {};
+            // 默认浅拷贝
+            var deep = false;
+            var length = arguments.length;
+            var i = 1;
+            var option, name, copy, copyisArr, attr, clone;
+            if (typeof target === 'boolean') {
+                deep = target;
+                target = arguments[1];
+                i = 2;
+            }
+            if (typeof target !== 'object') {
+                target = {};
+            }
+            // 这个deep模式也会走这部分逻辑,从而实现jQuery/原形深拷贝
+            if (length === i) {
+                target = this;
+                i--;
+            }
+            for (; i<length; i++) {
+                if ((option = arguments[i])) {
+                    for (name in option) {
+                        copy = option[name];
+                        attr = target[name];
+                        // 深拷贝且为数组/对象
+                        if (deep && (jQuery.islikeObj(copy) || (copyisArr = jQuery.islikeArr(copy)))) {
+                            if (copyisArr) {
+                                copyisArr = false;
+                                clone = attr && jQuery.islikeArr(copy) ? attr : [];
+                            } else {
+                                clone = attr && jQuery.islikeObj(copy) ? attr : {};
+                            }
+                            // 递归深拷贝
+                            target[name] = jQuery.extend(deep, clone, copy);
+                        } else if (copy){
+                            target[name] = copy;
+                        }
+                    }
+                }
+            }
+            return target;
+        };
+        jQuery.extend({
+            islikeArr: function (temp) {
+                console.log(Object.prototype.toString.call(temp));
+                return Object.prototype.toString.call(temp) === '[object Array]'
+            },
+            islikeObj: function (temp) {
+                console.log(Object.prototype.toString.call(temp));
+                return Object.prototype.toString.call(temp) === '[object Object]'
+            }
+        });
+        root.$ = root.jQ = jQuery;
+        $.fn.extend({say: 'hello', name: 'ex'});
+        var obj = $.fn.extend(true, {name: 'li', info: {sex: '男', size: {
+            one: 1,
+            two: 2,
+            three: {
+                one: 1,
+                two: 2,
+            }
+        }}});
+        console.log(obj);
+
+    })(this)
+
+</script>
+</body>
+</html>

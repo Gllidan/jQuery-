@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery选择器</title>
+</head>
+<body>
+    <div class="odiv">1</div>
+    <div class="odiv">2</div>
+<script src="jquery.js"></script>
+<script>
+    console.log($('<a>1</a>'));
+    console.log($(document));
+</script>
+<script>
+    (function (root) {
+        /*
+        * 需求:
+        * 空 -- jQuery实例
+        * 对象 -- jq实例
+        * 函数 -- dom加载后执行的方法 window.onload
+        * 字符串 -- 查询dom,包装成jq对象
+        * html字符 -- 创建dom,并包装成jq对象
+        * */
+        function jQuery(connect, selector) {
+            return new jQuery.fn.init(connect, selector)
+        }
+        jQuery.fn = jQuery.prototype = {
+            length: 0,
+            init: function (connect, selector) {
+                this.length = 0;
+                if (!connect) {
+                    return jQuery.prototype;
+                }
+                if (connect.nodeType) {
+                    console.log(connect);
+                    this.length = 1;
+                    this[0] = connect
+                }
+                if (typeof connect === 'function') {
+                    window.onload = connect;
+                }
+                if (typeof connect === 'string') {
+                    if (connect.concat(0) === '<' && connect.concat(connect.length - 1) === '>' && connect.length > 3) {
+
+                    } else {
+                        selector = selector || document;
+                        var domlist = selector.querySelectorAll(connect);
+                        for (var i = 0; i<domlist.length; i++) {
+                            this[i] = domlist[i]
+                        }
+                        this.length = domlist.length
+                    }
+                }
+            }
+        };
+        root.$ = jQuery;
+        console.log($('.odiv'));
+        console.log($('<div>123123</div></a>'));
+    })(this);
+</script>
+</body>
+</html>
